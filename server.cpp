@@ -7,9 +7,7 @@ void Server::startServer()
     if (this->listen(QHostAddress("127.0.0.1"), 5555))
     {
         qDebug() << "Server started";
-        //xmlToDB();
-        qDebug() << dbToJson();
-
+        xmlToDB();
     }
     else
     {
@@ -25,15 +23,20 @@ void Server::incomingConnection(qintptr socket_descriptor)
     connect(socket, SIGNAL(disconnected()), this, SLOT(socketDisconnect()));
 
     qDebug() << socket_descriptor << " is connected";
-
-    socket->write("you are connected");
-
-    qDebug() << "write to client: you are connected";
 }
 
 void Server::socketReady()
 {
-
+    QJsonDocument json = QJsonDocument::fromJson(socket->readAll());
+    QJsonObject jsonObject;
+    if (json.isObject())
+    {
+        jsonObject = json.object();
+        if (jsonObject.value("info") == "dai")
+        {
+            socket->write(dbToJson().toJson(QJsonDocument::Compact));
+        }
+    }
 }
 
 void Server::socketDisconnect()
