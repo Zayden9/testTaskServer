@@ -6,7 +6,7 @@ void Server::startServer()
 {
     if (this->listen(QHostAddress("127.0.0.1"), 5555))
     {
-        qDebug() << "Server started";
+        qDebug() << "Server started";/*
         file.setFileName(QCoreApplication::applicationDirPath() + "/1.1.1.1.xml");
         if (file.open(QIODevice::ReadWrite))
         {
@@ -20,26 +20,18 @@ void Server::startServer()
                 {
                     qDebug() << xmlSR.attributes().at(i).name();
                 }
+                qDebug() << xmlSR.readNextStartElement();
+                qDebug() << xmlSR.readNextStartElement();
+                qDebug() << xmlSR.name();
+                qDebug() << xmlSR.readNextStartElement();
             }
-        }
-        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-        db.setDatabaseName(QCoreApplication::applicationDirPath() + "/database.db");
-        if (db.open())
-        {
-            qDebug() << "db open";
-            removeDBTables(&db);
-            createDBTables(&db);
-        }
-        else
-        {
-            qDebug() << "db not open";
-        }
+        }*/
+        xmlToDB();
     }
     else
     {
         qDebug() << "Server not started";
     }
-
 }
 
 void Server::incomingConnection(qintptr socket_descriptor)
@@ -72,18 +64,16 @@ void Server::readNextXML(QXmlStreamReader* xmlSR)
     while (!xmlSR->readNextStartElement() && !xmlSR->atEnd());
 }
 
-void Server::removeDBTables(QSqlDatabase* db)
+void Server::removeDBTables(QSqlQuery* query)
 {
-    QSqlQuery query(*db);
-    query.exec("DROP TABLE IF EXISTS block;");
-    query.exec("DROP TABLE IF EXISTS board;");
-    query.exec("DROP TABLE IF EXISTS port;");
+    query->exec("DROP TABLE IF EXISTS block;");
+    query->exec("DROP TABLE IF EXISTS board;");
+    query->exec("DROP TABLE IF EXISTS port;");
 }
 
-void Server::createDBTables(QSqlDatabase* db)
+void Server::createDBTables(QSqlQuery* query)
 {
-    QSqlQuery query(*db);
-    query.exec("CREATE TABLE 'block' ("
+    query->exec("CREATE TABLE 'block' ("
                 "'id'	INTEGER NOT NULL,"
                 "'Name'	TEXT,"
                 "'IP'	TEXT,"
@@ -94,7 +84,7 @@ void Server::createDBTables(QSqlDatabase* db)
                 "'Label'	TEXT,"
                 "PRIMARY KEY('id')"
                 ");");
-    query.exec("CREATE TABLE 'board' ("
+    query->exec("CREATE TABLE 'board' ("
                 "'id'	INTEGER NOT NULL,"
                 "'parent id'	INTEGER,"
                 "'Num'	INTEGER,"
@@ -104,7 +94,7 @@ void Server::createDBTables(QSqlDatabase* db)
                 "'Algoritms'	TEXT,"
                 "PRIMARY KEY('id')"
                 ");");
-    query.exec("CREATE TABLE 'port' ("
+    query->exec("CREATE TABLE 'port' ("
                 "'id'	INTEGER NOT NULL,"
                 "'parent id'	INTEGER,"
                 "'Num'	INTEGER,"
@@ -112,4 +102,65 @@ void Server::createDBTables(QSqlDatabase* db)
                 "'Signal'	INTEGER,"
                 "PRIMARY KEY('id')"
                 ");");
+}
+
+void Server::xmlToDB()
+{
+    QDir dir(QCoreApplication::applicationDirPath());
+    QFileInfoList fileIL = dir.entryInfoList((QStringList)"*.xml", QDir::Files);
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName(QCoreApplication::applicationDirPath() + "/database.db");
+    if (db.open())
+    {
+        qDebug() << "db open";
+        QSqlQuery query(db);
+        removeDBTables(&query);
+        createDBTables(&query);
+
+        for (int i = 0; i < fileIL.count(); i++)
+        {
+            file.setFileName(QCoreApplication::applicationDirPath() + "/" + fileIL.at(i).fileName());
+            if (file.open(QIODevice::ReadOnly))
+            {
+                xmlSR.clear();
+                xmlSR.addData(file.readAll());
+                file.close();
+                xmlSR.readNextStartElement();
+                xmlSR.readNextStartElement();
+                xmlToDB(&xmlSR, &query, "");
+            }
+        }
+        db.close();
+        qDebug() << "db close";
+    }
+    else
+    {
+        qDebug() << "db not open";
+    }
+}
+
+void Server::xmlToDB(QXmlStreamReader* xmlSR, QSqlQuery* query, QString parent_id)
+{
+    qDebug() << "here we are";
+    QString s = "INSERT INTO " + xmlSR->name() + " ('";
+    for (int i = 0; i < xmlSR->attributes().count(); i++)
+    {
+        s += xmlSR->attributes().at(i).name();
+        if (i < xmlSR->attributes().count()-1) s += "', '";
+    }
+    if (parent_id != "") s += "', 'parent id";
+    s += "') VALUES ('";
+    for (int i = 0; i < xmlSR->attributes().count(); i++)
+    {
+        s += xmlSR->attributes().at(i).value();
+        if (i < xmlSR->attributes().count()-1) s += "', '";
+    }
+    if (parent_id != "") s += ("', '" + parent_id);
+    s += "');";
+    query->exec(s);
+    parent_id = xmlSR->attributes().at(0).value().toString();
+    while (xmlSR->readNextStartElement())
+    {
+        xmlToDB(xmlSR, query, parent_id);
+    }
 }

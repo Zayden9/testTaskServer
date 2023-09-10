@@ -23,8 +23,10 @@ public:
     QXmlStreamReader xmlSR;
 
     void readNextXML(QXmlStreamReader* xmlSR);
-    void removeDBTables(QSqlDatabase* db);
-    void createDBTables(QSqlDatabase* db);
+    void removeDBTables(QSqlQuery* query);
+    void createDBTables(QSqlQuery* query);
+    void xmlToDB();
+    void xmlToDB(QXmlStreamReader* xmlSR, QSqlQuery *query, QString parent_id);
 public slots:
     void startServer();
     void incomingConnection(qintptr socket_descriptor);
