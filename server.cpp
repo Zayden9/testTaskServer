@@ -6,26 +6,7 @@ void Server::startServer()
 {
     if (this->listen(QHostAddress("127.0.0.1"), 5555))
     {
-        qDebug() << "Server started";/*
-        file.setFileName(QCoreApplication::applicationDirPath() + "/1.1.1.1.xml");
-        if (file.open(QIODevice::ReadWrite))
-        {
-            xmlSR.addData(file.readAll());
-
-            while (!xmlSR.atEnd())
-            {
-                readNextXML(&xmlSR);
-                qDebug() << xmlSR.name();
-                for(int i = 0; i < xmlSR.attributes().count(); i++)
-                {
-                    qDebug() << xmlSR.attributes().at(i).name();
-                }
-                qDebug() << xmlSR.readNextStartElement();
-                qDebug() << xmlSR.readNextStartElement();
-                qDebug() << xmlSR.name();
-                qDebug() << xmlSR.readNextStartElement();
-            }
-        }*/
+        qDebug() << "Server started";
         xmlToDB();
     }
     else
@@ -57,11 +38,6 @@ void Server::socketDisconnect()
 {
     qDebug() << "smb is disconnected";
     socket->deleteLater();
-}
-
-void Server::readNextXML(QXmlStreamReader* xmlSR)
-{
-    while (!xmlSR->readNextStartElement() && !xmlSR->atEnd());
 }
 
 void Server::removeDBTables(QSqlQuery* query)
@@ -142,20 +118,20 @@ void Server::xmlToDB()
 void Server::xmlToDB(QXmlStreamReader* xmlSR, QSqlQuery* query, QString parent_id)
 {
     qDebug() << "here we are";
-    QString s = "INSERT INTO " + xmlSR->name() + " ('";
-    for (int i = 0; i < xmlSR->attributes().count(); i++)
+    QString s = "INSERT INTO " + xmlSR->name() + " ('";         //собираем запрос
+    for (int i = 0; i < xmlSR->attributes().count(); i++)       //собираем имена
     {
         s += xmlSR->attributes().at(i).name();
-        if (i < xmlSR->attributes().count()-1) s += "', '";
+        if (i < xmlSR->attributes().count()-1) s += "', '";     //защита от установки запятой после последнего элемента
     }
-    if (parent_id != "") s += "', 'parent id";
+    if (parent_id != "") s += "', 'parent id";                  //если вложенный элемент, то добавляем id родителя (имя)
     s += "') VALUES ('";
-    for (int i = 0; i < xmlSR->attributes().count(); i++)
+    for (int i = 0; i < xmlSR->attributes().count(); i++)       //собираем значение
     {
         s += xmlSR->attributes().at(i).value();
-        if (i < xmlSR->attributes().count()-1) s += "', '";
+        if (i < xmlSR->attributes().count()-1) s += "', '";     //защита от установки запятой после последнего элемента
     }
-    if (parent_id != "") s += ("', '" + parent_id);
+    if (parent_id != "") s += ("', '" + parent_id);             //если вложенный элемент, то добавляем id родителя (значение)
     s += "');";
     query->exec(s);
     parent_id = xmlSR->attributes().at(0).value().toString();

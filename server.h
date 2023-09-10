@@ -22,7 +22,6 @@ public:
     QFile file;
     QXmlStreamReader xmlSR;
 
-    void readNextXML(QXmlStreamReader* xmlSR);
     void removeDBTables(QSqlQuery* query);
     void createDBTables(QSqlQuery* query);
     void xmlToDB();
