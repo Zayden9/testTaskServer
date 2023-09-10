@@ -7,6 +7,8 @@
 #include <QFile>
 #include <QCoreApplication>
 #include <QDir>
+#include <QSqlDatabase>
+#include <QSqlQuery>
 
 
 class Server: QTcpServer
@@ -21,6 +23,8 @@ public:
     QXmlStreamReader xmlSR;
 
     void readNextXML(QXmlStreamReader* xmlSR);
+    void removeDBTables(QSqlDatabase* db);
+    void createDBTables(QSqlDatabase* db);
 public slots:
     void startServer();
     void incomingConnection(qintptr socket_descriptor);
