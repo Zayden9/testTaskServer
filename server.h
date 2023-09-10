@@ -3,6 +3,10 @@
 
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QXmlStreamReader>
+#include <QFile>
+#include <QCoreApplication>
+#include <QDir>
 
 
 class Server: QTcpServer
@@ -13,6 +17,10 @@ public:
     Server();
 
     QTcpSocket* socket;
+    QFile file;
+    QXmlStreamReader xmlSR;
+
+    void readNextXML(QXmlStreamReader* xmlSR);
 public slots:
     void startServer();
     void incomingConnection(qintptr socket_descriptor);

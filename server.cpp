@@ -7,7 +7,21 @@ void Server::startServer()
     if (this->listen(QHostAddress("127.0.0.1"), 5555))
     {
         qDebug() << "Server started";
+        file.setFileName(QCoreApplication::applicationDirPath() + "/1.1.1.1.xml");
+        if (file.open(QIODevice::ReadWrite))
+        {
+            xmlSR.addData(file.readAll());
 
+            while (!xmlSR.atEnd())
+            {
+                readNextXML(&xmlSR);
+                qDebug() << xmlSR.name();
+                for(int i = 0; i < xmlSR.attributes().count(); i++)
+                {
+                    qDebug() << xmlSR.attributes().at(i).name();
+                }
+            }
+        }
     }
     else
     {
@@ -39,4 +53,9 @@ void Server::socketDisconnect()
 {
     qDebug() << "smb is disconnected";
     socket->deleteLater();
+}
+
+void Server::readNextXML(QXmlStreamReader* xmlSR)
+{
+    while (!xmlSR->readNextStartElement() && !xmlSR->atEnd());
 }
