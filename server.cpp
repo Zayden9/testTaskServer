@@ -7,7 +7,9 @@ void Server::startServer()
     if (this->listen(QHostAddress("127.0.0.1"), 5555))
     {
         qDebug() << "Server started";
-        xmlToDB();
+        //xmlToDB();
+        qDebug() << dbToJson();
+
     }
     else
     {
@@ -139,4 +141,48 @@ void Server::xmlToDB(QXmlStreamReader* xmlSR, QSqlQuery* query, QString parent_i
     {
         xmlToDB(xmlSR, query, parent_id);
     }
+}
+
+QJsonDocument Server::dbToJson()
+{
+    QJsonDocument json;
+    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    db.setDatabaseName(QCoreApplication::applicationDirPath() + "/database.db");
+    if (db.open())
+    {
+        qDebug() << "db open";
+        QSqlQuery query(db);
+
+
+        QJsonObject jsonObject;
+
+        query.exec("SELECT * FROM block");
+        jsonObject.insert("block", dbToJson(&query));
+        query.exec("SELECT * FROM board");
+        jsonObject.insert("board", dbToJson(&query));
+        query.exec("SELECT * FROM port");
+        jsonObject.insert("port", dbToJson(&query));
+
+        json.setObject(jsonObject);
+    }
+    else
+    {
+        qDebug() << "db not open";
+    }
+    return json;
+}
+
+QJsonArray Server::dbToJson(QSqlQuery* query)
+{
+    QJsonArray jsonArray;
+    while (query->next())
+    {
+        QJsonObject jsonObject;
+        for(int i = 0; i < query->record().count(); i++)
+        {
+            jsonObject.insert(query->record().fieldName(i), query->value(i).toJsonValue());
+        }
+        jsonArray.append(jsonObject);
+    }
+    return jsonArray;
 }
