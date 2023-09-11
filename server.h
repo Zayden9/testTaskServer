@@ -14,6 +14,8 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QTimer>
+#include <QCryptographicHash>
 
 
 class Server: QTcpServer
@@ -27,6 +29,8 @@ public:
     QFile file;
     QXmlStreamReader xmlSR;
     QSqlDatabase db;
+    QTimer* timer;
+    QMultiMap<QString, QByteArray> fileHashMap;
 
     void removeDBTables(QSqlQuery* query);
     void createDBTables(QSqlQuery* query);
@@ -39,6 +43,7 @@ public slots:
     void incomingConnection(qintptr socket_descriptor);
     void socketReady();
     void socketDisconnect();
+    void checkXML();
 };
 
 #endif // SERVER_H

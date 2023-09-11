@@ -9,7 +9,10 @@ void Server::startServer()
         qDebug() << "Server started";
         db = QSqlDatabase::addDatabase("QSQLITE");
         db.setDatabaseName(QCoreApplication::applicationDirPath() + "/database.db");
-        xmlToDB();
+        checkXML();
+        timer = new QTimer(this);
+        connect(timer, SIGNAL(timeout()), this, SLOT(checkXML()));
+        timer->start(60000);
     }
     else
     {
@@ -45,6 +48,32 @@ void Server::socketDisconnect()
 {
     qDebug() << "smb is disconnected";
     socket->deleteLater();
+}
+
+void Server::checkXML()
+{
+    QDir dir(QCoreApplication::applicationDirPath());
+    QFileInfoList fileIL = dir.entryInfoList((QStringList)"*.xml", QDir::Files);
+    for (int i = 0; i < fileIL.count(); i++)
+    {
+        QFile file(fileIL.at(i).filePath());
+        if (file.open(QFile::ReadOnly))
+        {
+            QCryptographicHash hash(QCryptographicHash::Md5);
+            if (hash.addData(&file))
+            {
+                if (!fileHashMap.contains(fileIL.at(i).fileName()) || fileHashMap.value(fileIL.at(i).fileName()) != hash.result())
+                {
+                    qDebug() << "hash unsuccess";
+                    file.close();
+                    xmlToDB();
+                    break;
+                }
+            }
+            file.close();
+        }
+    }
+    qDebug() << "hash success";
 }
 
 void Server::removeDBTables(QSqlQuery* query)
@@ -91,6 +120,7 @@ void Server::xmlToDB()
 {
     QDir dir(QCoreApplication::applicationDirPath());
     QFileInfoList fileIL = dir.entryInfoList((QStringList)"*.xml", QDir::Files);
+    fileHashMap.clear();
     if (db.open())
     {
         qDebug() << "db open";
@@ -100,7 +130,16 @@ void Server::xmlToDB()
 
         for (int i = 0; i < fileIL.count(); i++)
         {
-            file.setFileName(QCoreApplication::applicationDirPath() + "/" + fileIL.at(i).fileName());
+            file.setFileName(fileIL.at(i).filePath());
+            if (file.open(QIODevice::ReadOnly))
+            {
+                QCryptographicHash hash(QCryptographicHash::Md5);
+                if (hash.addData(&file))
+                {
+                    fileHashMap.insert(fileIL.at(i).fileName(), hash.result());
+                    file.close();
+                }
+            }
             if (file.open(QIODevice::ReadOnly))
             {
                 xmlSR.clear();
