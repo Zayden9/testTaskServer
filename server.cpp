@@ -73,7 +73,14 @@ void Server::checkXML()
             file.close();
         }
     }
-    qDebug() << "hash success";
+    if (fileIL.count() == 0)
+    {
+        qDebug() << "files not found";
+    }
+    else
+    {
+        qDebug() << "hash success";
+    }
 }
 
 void Server::removeDBTables(QSqlQuery* query)
