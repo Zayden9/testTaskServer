@@ -26,6 +26,7 @@ public:
     QTcpSocket* socket;
     QFile file;
     QXmlStreamReader xmlSR;
+    QSqlDatabase db;
 
     void removeDBTables(QSqlQuery* query);
     void createDBTables(QSqlQuery* query);

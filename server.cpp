@@ -7,6 +7,8 @@ void Server::startServer()
     if (this->listen(QHostAddress("127.0.0.1"), 5555))
     {
         qDebug() << "Server started";
+        db = QSqlDatabase::addDatabase("QSQLITE");
+        db.setDatabaseName(QCoreApplication::applicationDirPath() + "/database.db");
         xmlToDB();
     }
     else
@@ -89,8 +91,6 @@ void Server::xmlToDB()
 {
     QDir dir(QCoreApplication::applicationDirPath());
     QFileInfoList fileIL = dir.entryInfoList((QStringList)"*.xml", QDir::Files);
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName(QCoreApplication::applicationDirPath() + "/database.db");
     if (db.open())
     {
         qDebug() << "db open";
@@ -149,13 +149,10 @@ void Server::xmlToDB(QXmlStreamReader* xmlSR, QSqlQuery* query, QString parent_i
 QJsonDocument Server::dbToJson()
 {
     QJsonDocument json;
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName(QCoreApplication::applicationDirPath() + "/database.db");
     if (db.open())
     {
         qDebug() << "db open";
         QSqlQuery query(db);
-
 
         QJsonObject jsonObject;
 
@@ -167,6 +164,8 @@ QJsonDocument Server::dbToJson()
         jsonObject.insert("port", dbToJson(&query));
 
         json.setObject(jsonObject);
+        db.close();
+        qDebug() << "db close";
     }
     else
     {
@@ -183,7 +182,7 @@ QJsonArray Server::dbToJson(QSqlQuery* query)
         QJsonObject jsonObject;
         for(int i = 0; i < query->record().count(); i++)
         {
-            jsonObject.insert(query->record().fieldName(i), query->value(i).toJsonValue());
+            jsonObject.insert(query->record().fieldName(i), query->value(i).toString());
         }
         jsonArray.append(jsonObject);
     }
